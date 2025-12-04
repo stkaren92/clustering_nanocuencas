@@ -1,0 +1,50 @@
+library(tidyverse)
+library(bipartite)
+
+model <- 'knn_gower'
+interaction_matrix <- read.csv(paste0('output/interaction_matrix_',
+                                      model,
+                                      '.csv'),
+                               header = TRUE)
+
+interaction_matrix <- interaction_matrix %>%
+  column_to_rownames(var = names(interaction_matrix)[1])
+
+jpeg(file=paste0("images/",
+                 model,
+                 "_network.jpeg"), 
+     width=6, height=4, units="in", res=300)
+plotweb(interaction_matrix, text.rot=90, labsize=0.5)
+dev.off()
+
+jpeg(file=paste0("images/",
+                 model,
+                 "_visweb_nested.jpeg"), 
+     width=5, height=6, units="in", res=300)
+visweb(t(interaction_matrix), 
+       type="nested", 
+       textsize = 0.1)
+dev.off()
+
+jpeg(file=paste0("images/",
+                 model,
+                 "_visweb.jpeg"), 
+     width=5, height=6, units="in", res=300)
+visweb(t(interaction_matrix), 
+       type="none", 
+       textsize = 0.1)
+dev.off()
+
+# metrics
+networklevel(interaction_matrix, index = c("connectance",
+                                           "nestedness",
+                                           "NODF",
+                                           "H2"))
+
+# null model metrics
+nulls <- nullmodel(interaction_matrix, N=100, method="r2d")
+nulls_metrics <- unlist(sapply(nulls, networklevel, index=c("connectance",
+                                                   "nestedness",
+                                                   "NODF",
+                                                   "H2")))
+rowMeans(nulls_metrics)

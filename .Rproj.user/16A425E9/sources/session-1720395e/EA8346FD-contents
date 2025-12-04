@@ -1,0 +1,154 @@
+###### validation data ####
+library(tidyverse)
+library(bipartite)
+
+interaction_matrix_observed <- read.csv('data/processed/michoacan/interaction_matrix.csv',
+                                        header = TRUE)
+interaction_matrix_validation <- read.csv('data/processed/persea/interaction_matrix.csv',
+                                          header = TRUE)
+
+# model <- "knn_gower_K30"
+model <- "mf_lambda0.01_kfactors7_K30"
+
+interaction_matrix_knn <- read.csv(paste0('output/MF/interaction_matrix_',
+                                          model,
+                                          '.csv'),
+                                   header = TRUE)
+
+sum(interaction_matrix_knn[-1])/(ncol(interaction_matrix_knn)-1)
+
+df <- interaction_matrix_knn %>%
+  pivot_longer(!plant, names_to = "bee", values_to = "interaction_predicted")
+
+df_observed <- interaction_matrix_observed %>%
+  dplyr::rename(plant = X) %>% 
+  pivot_longer(!plant, names_to = "bee", values_to = "interaction_observed")
+
+df_validation <- interaction_matrix_validation %>%
+  dplyr::rename(plant = X) %>% 
+  pivot_longer(!plant, names_to = "bee", values_to = "interaction_validation")
+
+df <- df %>% 
+  left_join(df_observed, by = c('bee','plant')) %>%
+  left_join(df_validation, by = c('bee','plant')) %>% 
+  mutate(interaction_observed = ifelse(!is.na(interaction_observed),
+                                       interaction_observed, 0)) %>% 
+  mutate(interaction_observed_bin = ifelse(interaction_observed > 0,1,0),
+         interaction_validation_bin = ifelse(interaction_validation > 0,1,0))
+
+df <- df %>%
+  mutate(
+    type_validation = case_when(
+      interaction_predicted == 1 & interaction_validation_bin == 1 ~ "Verdadero positivo",
+      interaction_predicted == 1 & interaction_validation_bin == 0 ~ "Nueva interacción",
+      interaction_predicted == 0 & interaction_validation_bin == 1 ~ "Falso Negativo",
+      interaction_predicted == 0 & interaction_validation_bin == 0 ~ "Sin interacción"
+    )
+  )
+
+df <- df %>%
+  mutate(
+    type_observed = case_when(
+      interaction_predicted == 1 & interaction_observed_bin == 1 ~ "Verdadero positivo",
+      interaction_predicted == 1 & interaction_observed_bin == 0 ~ "Nueva interacción",
+      interaction_predicted == 0 & interaction_observed_bin == 1 ~ "Falso Negativo",
+      interaction_predicted == 0 & interaction_observed_bin == 0 ~ "Sin interacción"
+    )
+  )
+
+df <- df %>%
+  mutate(
+    type_observed_validation = case_when(
+      interaction_validation_bin == 1 & interaction_observed_bin == 1 ~ "Verdadero positivo",
+      interaction_validation_bin == 1 & interaction_observed_bin == 0 ~ "Nueva interacción",
+      interaction_validation_bin == 0 & interaction_observed_bin == 1 ~ "Falso Negativo",
+      interaction_validation_bin == 0 & interaction_observed_bin == 0 ~ "Sin interacción"
+    )
+  )
+
+df <- df %>% 
+  group_by(plant) %>% 
+  mutate(n_observed_plant = sum(interaction_observed)) %>% 
+  mutate(cold_start_plant = ifelse(n_observed_plant>0,0,1))
+
+
+df_summary <- data.frame(matrix(ncol = 2, nrow = 0))
+n <- (sum(df$type_observed=="Verdadero positivo", na.rm = T)+
+        sum(df$type_observed=="Falso Negativo", na.rm = T))
+df_summary <- rbind(df_summary,
+                    c("recall_train",
+                      sum(df$type_observed=="Verdadero positivo", na.rm = T)/n))
+
+n <- (sum(df$type_validation=="Verdadero positivo", na.rm = T)+
+        sum(df$type_validation=="Falso Negativo", na.rm = T)); n
+df_summary <- rbind(df_summary,
+                    c("recall_val",
+                      sum(df$type_validation=="Verdadero positivo", na.rm = T)/n))
+
+df_cs <- df %>% 
+  filter(cold_start_plant==1)
+n <- (sum(df_cs$type_validation=="Verdadero positivo", na.rm = T)+
+        sum(df_cs$type_validation=="Falso Negativo", na.rm = T)); n
+df_summary <- rbind(df_summary,
+                    c("recall_val_cs",
+                      sum(df_cs$type_validation=="Verdadero positivo", na.rm = T)/n))
+
+df_cs <- df %>% 
+  filter(cold_start_plant==0)
+n <- (sum(df_cs$type_validation=="Verdadero positivo", na.rm = T)+
+        sum(df_cs$type_validation=="Falso Negativo", na.rm = T)); n
+df_summary <- rbind(df_summary,
+                    c("recall_val_ws",
+                      sum(df_cs$type_validation=="Verdadero positivo", na.rm = T)/n))
+
+df_aux <- df %>% 
+  group_by(plant) %>% 
+  summarise(n=sum(interaction_predicted))
+df_summary <- rbind(df_summary,
+                    c("% de plantas no recomendadas",
+                      sum(df_aux$n==0)/nrow(df_aux)))
+df_aux <- df %>% 
+  filter(cold_start_plant==1) %>% 
+  group_by(plant) %>% 
+  summarise(n=sum(interaction_predicted))
+df_summary <- rbind(df_summary,
+                    c("% de cold-start plantas no recomendadas",
+                      sum(df_aux$n==0)/nrow(df_aux)))
+colnames(df_summary) <- c('measure','value')
+
+df %>% 
+  filter(!is.na(type_validation)) %>% 
+  group_by(type_observed_validation, cold_start_plant) %>% 
+  summarise(n = n())
+
+ggplot(df %>% 
+         filter(!is.na(type_validation)), 
+       aes(x = plant, y = bee, fill = as.factor(type_validation))) +
+  geom_tile(color = "black") + # Create squares with borders
+  scale_fill_manual(values=c("red", "darkgray", "white", "green"), na.value="white") +
+  theme_minimal() +
+  labs(fill = "") +
+  ggtitle(paste(model," recall =",df_summary %>% 
+                                          filter(measure=="recall_val") %>% 
+                                          pull(value))) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        axis.text = element_text(size=5),
+        aspect.ratio = 1) # Ensure the plot is square
+# ggsave(paste0("output/validation_",model,".jpeg"), width = 8, height = 8)
+
+ggplot(df, aes(x = plant, y = bee, fill = as.factor(type_observed))) +
+  geom_tile(color = "black") + # Create squares with borders
+  scale_fill_manual(values=c("red", "darkblue", "white", "lightblue")) +
+  theme_minimal() +
+  labs(fill = "") +
+  ggtitle(paste(model," recall =",df_summary %>% 
+                  filter(measure=="recall_train") %>% 
+                  pull(value))) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        axis.text = element_text(size=5),
+        aspect.ratio = 1) # Ensure the plot is square
+# ggsave(paste0("output/predicted_matrix_",model,".jpeg"), width = 8, height = 8)
+
+
+
+
