@@ -303,4 +303,5 @@ dataset %>% st_write(fs::path_join(c(shp_output, "dataset.gpkg")))
 
 dataset %>% 
   st_drop_geometry() %>% 
+  mutate(across(starts_with("slope"), as.numeric)) %>% 
   write_csv(fs::path_join(c(OUTPUT_DIR, "dataset.csv")))
