@@ -183,8 +183,9 @@ add_stat_raster <- function(data,
 }
 
 
-# Dataset creation ----
+# Load and select geoms ----
 OUTPUT_DIR <- '02-processed_data'
+current_date <- now() %>% date()
 shp_output <- fs::path_join(c(OUTPUT_DIR, "aoi_shp"))
 tiff_output <- fs::path_join(c(OUTPUT_DIR, "aoi_tiff"))
 
@@ -195,7 +196,7 @@ fs::dir_create(tiff_output)
 nanocuecas_data <- sf::read_sf('00-raw_data/nanocuencas/SHT_BAconsensuadov2_uw.shp')
 
 geologia_data <- sf::st_read('00-raw_data/geologia/r250k_ccl_dissolveTipo.shp')
-suelos_data <- sf::st_read('00-raw_data/suelos/contedafo.shp')
+suelos_data <- sf::st_read('00-raw_data/suelos/contedafo.shp', options = "ENCODING=WINDOWS-1252")
 usvVII_data <- sf::read_sf('00-raw_data/uso_suelo_vegetacion/usv250s7cw.shp')
 
 st_crs(suelos_data) <- geologia_data %>% st_crs()
@@ -224,13 +225,13 @@ usvVII_data_aoi <- usvVII_data %>%
 
 # Save shp
 geologia_data_aoi %>% 
-  st_write(fs::path_join(c(shp_output, 'geologia.shp')))
+  st_write(fs::path_join(c(shp_output, paste(current_date, 'geologia.shp', sep="_"))))
 
 suelos_data_aoi %>% 
-  st_write(fs::path_join(c(shp_output, 'suelos.shp')))
+  st_write(fs::path_join(c(shp_output, paste(current_date, 'suelos.shp', sep="_"))))
 
 usvVII_data_aoi %>% 
-  st_write(fs::path_join(c(shp_output, 'usvVII.shp')))
+  st_write(fs::path_join(c(shp_output, paste(current_date, 'usvVII.shp', sep="_"))))
 
 
 
@@ -256,10 +257,10 @@ aoi_dem_slope <- aoi_dem_proj %>%
 
 # Save raster data
 aoi_dem %>% 
-  write_stars(fs::path_join(c(tiff_output, 'dem_aoi.tiff')))
+  write_stars(fs::path_join(c(tiff_output, paste(current_date, 'dem_aoi.tiff', sep="_"))))
 
 aoi_dem_slope %>% 
-  write_stars(fs::path_join(c(tiff_output, 'dem_slope_aoi.tiff')))
+  write_stars(fs::path_join(c(tiff_output, paste(current_date, 'dem_slope_aoi.tiff', sep="_"))))
 
 # Create dataset ----
 
@@ -268,7 +269,7 @@ geologia_data_aoi <- geologia_data_aoi %>%
   select(TIPO)
 
 suelos_data_aoi <- suelos_data_aoi %>%
-  select(CLAVE_IMP)
+  select(NOM_SUE1, NOM_SUE2)
 
 usvVII_data_aoi <- usvVII_data_aoi %>%
   select(codigo)
@@ -281,7 +282,10 @@ dataset <- nanocuecas_data %>%
   add_area_covar(geologia_data_aoi, "TIPO", unit = 'ha', column_prefix = "glg")
 
 dataset <- dataset %>% 
-  add_area_covar(suelos_data_aoi, "CLAVE_IMP", unit = 'ha', column_prefix = "suelos")
+  add_area_covar(suelos_data_aoi, "NOM_SUE1", unit = 'ha', column_prefix = "suelo1")
+
+dataset <- dataset %>% 
+  add_area_covar(suelos_data_aoi, "NOM_SUE2", unit = 'ha', column_prefix = "suelo2")
 
 dataset <- dataset %>% 
   add_area_covar(usvVII_data_aoi, "codigo", unit = 'ha', column_prefix = "usv")
@@ -299,9 +303,9 @@ dataset <- dataset %>%
   add_stat_raster(aoi_dem_slope, funs = fn_list, column_prefix = "slope", na.rm = TRUE)
 
 # Save dataset shp
-dataset %>% st_write(fs::path_join(c(shp_output, "dataset.gpkg")))
+dataset %>% st_write(fs::path_join(c(shp_output, paste(current_date, "dataset.gpkg", sep="_"))))
 
 dataset %>% 
   st_drop_geometry() %>% 
   mutate(across(starts_with("slope"), as.numeric)) %>% 
-  write_csv(fs::path_join(c(OUTPUT_DIR, "dataset.csv")))
+  write_csv(fs::path_join(c(OUTPUT_DIR, paste(current_date, "dataset.csv", sep="_"))))
