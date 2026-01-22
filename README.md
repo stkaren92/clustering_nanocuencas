@@ -29,10 +29,11 @@ para instalar las dependencias que usa el proyecto.
 
 ## Organización del proyecto
 
-Existen tres carpertas principales en el proyecto. Una para guardar los datos 
+Existen cuatro carpertas principales en el proyecto. Una para guardar los datos 
 originales (`00-raw-data`), la segunda (`01-scripts`) donde se encuentran los 
-_scripts_ de procesamiento  y la tercera (`02-processed_data`) para salvar los 
-resultados de intermedios y finales de los análisis. 
+_scripts_ de procesamiento, la tercera (`02-processed_data`) para salvar los 
+datos procesados y la cuarta (`03-clustering_output`) para los resultados finales 
+de los análisis. 
 
 ```
 00-raw_data
@@ -47,4 +48,8 @@ resultados de intermedios y finales de los análisis.
 └── 02-clustering.R # Hace el análisis de agrupamiento
 02-processed_data
 └── 2026-01-12_dataset.csv
+03-clustering_output
+└── 2026-01-22_dendrogram.jpg
+└── 2026-01-22_cluster_description.jpg
+└── 2026-01-22_nanocuecas_cluster.shp
 ```
