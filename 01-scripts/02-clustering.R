@@ -107,6 +107,26 @@ get_distance_matrix <- function(X, variable_type){
   # Initialize an empty n × n matrix to store distances
   S <- matrix(0, nrow = n, ncol = n)
   
+  warn_invalid_distance <- function(dist_z, metric_name, i, j, z) {
+    is_invalid <- is.null(dist_z) ||
+      length(dist_z) == 0 ||
+      any(is.na(dist_z)) ||
+      any(!is.finite(dist_z))
+    
+    if (is_invalid) {
+      warning(
+        sprintf(
+          "%s returned a missing or non-finite distance for rows %s and %s, variable %s. Contribution omitted.",
+          metric_name, i, j, z
+        ),
+        call. = FALSE
+      )
+      return(TRUE)
+    }
+    
+    return(FALSE)
+  }
+  
   # Loop over all row pairs (i, j)
   for (i in 1:n){
     for(j in 1:n){
@@ -125,7 +145,9 @@ get_distance_matrix <- function(X, variable_type){
         if(variable_type[z] == "distribution") {
           # Jensen–Shannon distance between probability vectors
           dist_z <- js_distance(p, q)
-          dist <- dist + dist_z # Add to total distance
+          if (!warn_invalid_distance(dist_z, "js_distance", i, j, z)) {
+            dist <- dist + dist_z # Add to total distance
+          }
         
           # -------- Variable type: parameters (mean & sd) --------  
         } else if (variable_type[z] == "parameters"){
@@ -133,8 +155,8 @@ get_distance_matrix <- function(X, variable_type){
           # Note: second parameter is variance, so sd^2
           dist_z <- hellingerpar(p[1], p[2]^2,
                                  q[1], q[2]^2)
-          # Add only if the value is not missing
-          if(!is.na(dist_z)){
+          # Add only if the value is valid
+          if(!warn_invalid_distance(dist_z, "hellingerpar", i, j, z)){
             dist <- dist + dist_z
           }
         }
@@ -169,10 +191,10 @@ data <- data %>%
                 ~ . / sum(c_across(starts_with('suelo2')))),
          across(starts_with('usv'),
                 ~ . / sum(c_across(starts_with('usv')))),
-         across(starts_with('suelo_prin'),
-                ~ . / sum(c_across(starts_with('suelo_prin')))),
-         across(starts_with('suelo_inifap'),
-                ~ . / sum(c_across(starts_with('suelo_inifap'))))
+         across(starts_with('sueloprin'),
+                ~ . / sum(c_across(starts_with('sueloprin')))),
+         across(starts_with('sueloinifap'),
+                ~ . / sum(c_across(starts_with('sueloinifap'))))
   ) %>%
   ungroup()
 
@@ -184,8 +206,8 @@ data <- data %>%
          tipo_suelo_gen2 = list(c_across(starts_with('suelo2'))),
          uso_suelo = list(c_across(starts_with('usv'))),
          pendiente = list(c_across(all_of(c("slope_mean","slope_sd")))),
-         tipo_suelo_prin = list(c_across(starts_with('suelo_prin'))),
-         tipo_suelo_inifap = list(c_across(starts_with('suelo_inifap')))
+         tipo_suelo_prin = list(c_across(starts_with('sueloprin'))),
+         tipo_suelo_inifap = list(c_across(starts_with('sueloinifap')))
          ) %>%
   ungroup()
 
@@ -210,22 +232,24 @@ variable_type <- c("distribution",
 S <- get_distance_matrix(X, variable_type)
 rownames(S) <- data %>% pull(clave_sht)
 colnames(S) <- data %>% pull(clave_sht)
+D <- as.dist(S)
 
 # Select optimal k
-fviz_nbclust(S, hcut, method = "wss")
-fviz_nbclust(S, hcut, method = "silhouette",
+fviz_nbclust(D, hcut, method = "wss",
+             hc_method = "complete")
+fviz_nbclust(D, hcut, method = "silhouette",
              hc_method = "complete")
 
 # Clustering
 k <- 4
-hclust <- hclust(as.dist(S), method = 'complete')
+hclust <- hclust(D, method = 'complete')
 cut <- cutree(hclust, k = k)
 data$cluster <- cut
 data <- data %>% 
   relocate(cluster)
 
 # Save dandogram
-jpeg(fs::path_join(c(OUTPUT_DIR, paste(current_date, "dendrogram.jpg", sep = "_"))),
+jpeg(fs::path_join(c(OUTPUT_DIR, paste(current_date, "dendrogram", k, "k.jpg", sep = "_"))),
      width = 1800, height = 600, quality = 90)
 plot(hclust)
 rect.hclust(hclust , k = k, border = 2:6)
@@ -251,7 +275,7 @@ ggplot(data_sum %>%
   coord_flip() +
   facet_grid(var ~ cluster, scales="free_y",
              space = "free")
-ggsave(fs::path_join(c(OUTPUT_DIR, paste(current_date, "cluster_description.jpg", sep = "_"))),
+ggsave(fs::path_join(c(OUTPUT_DIR, paste(current_date, "cluster_description", k, "k.jpg", sep = "_"))),
        width = 30,
        height = 50,
        units = "cm")
@@ -269,5 +293,7 @@ ggplot(nanocuecas_data,
 sf::write_sf(nanocuecas_data,
              fs::path_join(c(OUTPUT_DIR,
                              paste(current_date,
-                                   "nanocuecas_cluster.shp",
+                                   "nanocuecas_cluster",
+                                   k,
+                                   "k.shp",
                                    sep = "_"))))
