@@ -311,10 +311,10 @@ dataset <- dataset %>%
   add_area_covar(usvVII_data_aoi, "DESCRIPCIO", unit = 'ha', column_prefix = "usv")
 
 dataset <- dataset %>% 
-  add_area_covar(suelos2006_data_aoi, "GRUPO1", unit = 'ha', column_prefix = "suelo_prin")
+  add_area_covar(suelos2006_data_aoi, "GRUPO1", unit = 'ha', column_prefix = "sueloprin")
 
 dataset <- dataset %>% 
-  add_area_covar(suelosINIFAP_data_aoi, "DESCRIPCIO", unit = 'ha', column_prefix = "suelo_inifap")
+  add_area_covar(suelosINIFAP_data_aoi, "DESCRIPCIO", unit = 'ha', column_prefix = "sueloinifap")
 
 # Add covar data - raster 
 fn_list <- list(
