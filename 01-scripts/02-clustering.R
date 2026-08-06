@@ -155,7 +155,7 @@ INPUT_DIR <- '02-processed_data'
 OUTPUT_DIR <- '03-clustering_output'
 current_date <- now() %>% date()
 
-data <- read_csv(fs::path_join(c(INPUT_DIR, "2026-01-12_dataset.csv")))
+data <- read_csv(fs::path_join(c(INPUT_DIR, "2026-08-06_dataset.csv")))
 
 # Normalize count variables to get a probability distribution
 data <- data %>%
@@ -167,7 +167,11 @@ data <- data %>%
          across(starts_with('suelo2'),
                 ~ . / sum(c_across(starts_with('suelo2')))),
          across(starts_with('usv'),
-                ~ . / sum(c_across(starts_with('usv'))))
+                ~ . / sum(c_across(starts_with('usv')))),
+         across(starts_with('suelo_prin'),
+                ~ . / sum(c_across(starts_with('suelo_prin')))),
+         across(starts_with('suelo_inifap'),
+                ~ . / sum(c_across(starts_with('suelo_inifap'))))
   ) %>%
   ungroup()
 
@@ -178,7 +182,9 @@ data <- data %>%
          tipo_suelo_gen = list(c_across(starts_with('suelo1'))),
          tipo_suelo_gen2 = list(c_across(starts_with('suelo2'))),
          uso_suelo = list(c_across(starts_with('usv'))),
-         pendiente = list(c_across(all_of(c("slope_mean","slope_sd"))))
+         pendiente = list(c_across(all_of(c("slope_mean","slope_sd")))),
+         tipo_suelo_prin = list(c_across(starts_with('suelo_prin'))),
+         tipo_suelo_inifap = list(c_across(starts_with('suelo_inifap')))
          ) %>%
   ungroup()
 
@@ -188,13 +194,17 @@ X <- data %>%
                   "tipo_suelo_gen",
                   "tipo_suelo_gen2",
                   "uso_suelo",
-                  "pendiente"))
+                  "pendiente",
+                  "tipo_suelo_prin",
+                  "tipo_suelo_inifap"))
 
 variable_type <- c("distribution",
                    "distribution",
                    "distribution",
                    "distribution",
-                   "parameters")
+                   "parameters",
+                   "distribution",
+                   "distribution")
 
 S <- get_distance_matrix(X, variable_type)
 rownames(S) <- data %>% pull(clave_sht)
