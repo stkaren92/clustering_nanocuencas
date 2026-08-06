@@ -156,6 +156,7 @@ OUTPUT_DIR <- '03-clustering_output'
 current_date <- now() %>% date()
 
 data <- read_csv(fs::path_join(c(INPUT_DIR, "2026-08-06_dataset.csv")))
+nanocuecas_sf <- sf::read_sf('00-raw_data/02_Entrega_05082026/Shapefiles/Nanocuencas/SHT_V3_uw.shp')
 
 # Normalize count variables to get a probability distribution
 data <- data %>%
@@ -256,9 +257,7 @@ ggsave(fs::path_join(c(OUTPUT_DIR, paste(current_date, "cluster_description.jpg"
        units = "cm")
 
 # Save cluster shapefile
-nanocuecas_data <- sf::read_sf('00-raw_data/nanocuencas/SHT_BAconsensuadov2_uw.shp')
-
-nanocuecas_data <- nanocuecas_data %>% 
+nanocuecas_data <- nanocuecas_sf %>% 
   left_join(data %>% 
               select(cluster,clave_sht), 
             by = c("CLAVE_SHT"="clave_sht"))
@@ -269,6 +268,6 @@ ggplot(nanocuecas_data,
 
 sf::write_sf(nanocuecas_data,
              fs::path_join(c(OUTPUT_DIR,
-                             paste(current_date, 
-                                   "nanocuecas_cluster.shp", 
+                             paste(current_date,
+                                   "nanocuecas_cluster.shp",
                                    sep = "_"))))
