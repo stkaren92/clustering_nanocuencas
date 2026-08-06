@@ -193,13 +193,15 @@ fs::dir_create(shp_output)
 fs::dir_create(tiff_output)
 
 
-nanocuecas_data <- sf::read_sf('00-raw_data/nanocuencas/SHT_BAconsensuadov2_uw.shp')
+nanocuecas_data <- sf::read_sf('00-raw_data/02_Entrega_05082026/Shapefiles/Nanocuencas/SHT_V3_uw.shp')
 
-geologia_data <- sf::st_read('00-raw_data/geologia/r250k_ccl_dissolveTipo.shp')
-suelos_data <- sf::st_read('00-raw_data/suelos/contedafo.shp', options = "ENCODING=WINDOWS-1252")
-usvVII_data <- sf::read_sf('00-raw_data/uso_suelo_vegetacion/usv250s7cw.shp')
+geologia_data <- sf::st_read('00-raw_data/02_Entrega_05082026/Shapefiles/Covariables/r250k_ccl_dissolveTipo.shp')
+suelos2000_data <- sf::st_read('00-raw_data/02_Entrega_05082026/Shapefiles/Covariables/contedafo_cw.shp', options = "ENCODING=WINDOWS-1252")
+usvVII_data <- sf::read_sf('00-raw_data/02_Entrega_05082026/Shapefiles/Covariables/usv250s7cw.shp')
+suelos2006_data <- sf::read_sf('00-raw_data/02_Entrega_05082026/Shapefiles/Covariables/con_nal_06-11-2013.shp')
+suelosINIFAP_data <- sf::read_sf('00-raw_data/02_Entrega_05082026/Shapefiles/Covariables/eda251mcw.shp')
 
-st_crs(suelos_data) <- geologia_data %>% st_crs()
+st_crs(suelos2000_data) <- geologia_data %>% st_crs()
 
 aoi_bbox <- nanocuecas_data %>% st_bbox() %>% st_as_sfc() %>% st_buffer(3000) %>% st_bbox() %>% st_as_sfc()
 
@@ -210,30 +212,42 @@ geologia_data_poly <- st_cast(geologia_data, "POLYGON",
 aoi_crs <- aoi_bbox %>% st_crs()
 
 geologia_data_poly <- geologia_data_poly %>% st_transform(aoi_crs)
-suelos_data <- suelos_data %>% st_transform(aoi_crs)
+suelos2000_data <- suelos2000_data %>% st_transform(aoi_crs)
 usvVII_data <- usvVII_data %>% st_transform(aoi_crs)
+suelos2006_data <- suelos2006_data %>% st_transform(aoi_crs)
+suelosINIFAP_data <- suelosINIFAP_data %>% st_transform(aoi_crs)
 
 # Filter by AOI
 geologia_data_aoi <- geologia_data_poly %>% 
   st_filter(aoi_bbox)
 
-suelos_data_aoi <- suelos_data %>% 
+suelos2000_data_aoi <- suelos2000_data %>% 
   st_filter(aoi_bbox)
 
 usvVII_data_aoi <- usvVII_data %>% 
   st_filter(aoi_bbox)
 
+suelos2006_data_aoi <- suelos2006_data %>% 
+  st_filter(aoi_bbox)
+
+suelosINIFAP_data_aoi <- suelosINIFAP_data %>% 
+  st_filter(aoi_bbox)
+
 # Save shp
-geologia_data_aoi %>% 
+geologia_data_aoi %>%
   st_write(fs::path_join(c(shp_output, paste(current_date, 'geologia.shp', sep="_"))))
 
-suelos_data_aoi %>% 
+suelos2000_data_aoi %>%
   st_write(fs::path_join(c(shp_output, paste(current_date, 'suelos.shp', sep="_"))))
 
-usvVII_data_aoi %>% 
+usvVII_data_aoi %>%
   st_write(fs::path_join(c(shp_output, paste(current_date, 'usvVII.shp', sep="_"))))
 
+suelos2006_data_aoi %>%
+  st_write(fs::path_join(c(shp_output, paste(current_date, 'suelosPrincipal.shp', sep="_"))))
 
+suelosINIFAP_data_aoi %>%
+  st_write(fs::path_join(c(shp_output, paste(current_date, 'suelosDescripcion.shp', sep="_"))))
 
 # Add covar data raster
 
@@ -268,11 +282,17 @@ aoi_dem_slope %>%
 geologia_data_aoi <- geologia_data_aoi %>%
   select(TIPO)
 
-suelos_data_aoi <- suelos_data_aoi %>%
+suelos2000_data_aoi <- suelos2000_data_aoi %>%
   select(NOM_SUE1, NOM_SUE2)
 
 usvVII_data_aoi <- usvVII_data_aoi %>%
-  select(codigo)
+  select(DESCRIPCIO)
+
+suelos2006_data_aoi <- suelos2006_data_aoi %>%
+  select(GRUPO1)
+
+suelosINIFAP_data_aoi <- suelosINIFAP_data_aoi %>%
+  select(DESCRIPCIO)
 
 nanocuecas_data <- nanocuecas_data %>%
   select(ESTADO_SHT, CLAVE_SHT)
@@ -282,13 +302,19 @@ dataset <- nanocuecas_data %>%
   add_area_covar(geologia_data_aoi, "TIPO", unit = 'ha', column_prefix = "glg")
 
 dataset <- dataset %>% 
-  add_area_covar(suelos_data_aoi, "NOM_SUE1", unit = 'ha', column_prefix = "suelo1")
+  add_area_covar(suelos2000_data_aoi, "NOM_SUE1", unit = 'ha', column_prefix = "suelo1")
 
 dataset <- dataset %>% 
-  add_area_covar(suelos_data_aoi, "NOM_SUE2", unit = 'ha', column_prefix = "suelo2")
+  add_area_covar(suelos2000_data_aoi, "NOM_SUE2", unit = 'ha', column_prefix = "suelo2")
 
 dataset <- dataset %>% 
-  add_area_covar(usvVII_data_aoi, "codigo", unit = 'ha', column_prefix = "usv")
+  add_area_covar(usvVII_data_aoi, "DESCRIPCIO", unit = 'ha', column_prefix = "usv")
+
+dataset <- dataset %>% 
+  add_area_covar(suelos2006_data_aoi, "GRUPO1", unit = 'ha', column_prefix = "suelo_prin")
+
+dataset <- dataset %>% 
+  add_area_covar(suelosINIFAP_data_aoi, "DESCRIPCIO", unit = 'ha', column_prefix = "suelo_inifap")
 
 # Add covar data - raster 
 fn_list <- list(
