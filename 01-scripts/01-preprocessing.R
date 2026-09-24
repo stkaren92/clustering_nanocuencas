@@ -244,24 +244,85 @@ load_spatial_covariates <- function(catalog,
   return(spatial_covariates)
 }
 
+#' Add precomputed summary statistics by nanocuenca
+#'
+#' Each catalog row adds the MEAN and STD fields from one statistics shapefile
+#'
+#' @param data sf object containing the nanocuencas
+#' @param catalog data frame with shapefile, join_key, and prefix columns
+#' @param stats_dir directory containing the statistics shapefiles
+#'
+#' @return sf object with two additional numeric columns per catalog row
+add_summary_stats <- function(data,
+                              catalog,
+                              stats_dir) {
+
+  for (catalog_row in seq_len(nrow(catalog))) {
+    catalog_entry <- catalog[catalog_row, ]
+    join_key <- catalog_entry$join_key
+    prefix <- catalog_entry$prefix
+
+    stats_data <- sf::st_read(
+      file.path(stats_dir, catalog_entry$shapefile),
+      quiet = TRUE
+    ) %>%
+      sf::st_drop_geometry()
+
+    required_stats_columns <- c(join_key, "MEAN", "STD")
+
+    original_key_order <- data[[join_key]]
+
+    mean_column <- paste0(prefix, "_mean")
+    std_column <- paste0(prefix, "_sd")
+    stats_to_join <- stats_data %>%
+      dplyr::select(dplyr::all_of(required_stats_columns)) %>%
+      dplyr::rename(
+        !!mean_column := MEAN,
+        !!std_column := STD
+      )
+
+    original_row_count <- nrow(data)
+    data <- data %>%
+      dplyr::left_join(
+        stats_to_join,
+        by = join_key,
+        relationship = "one-to-one"
+      )
+
+    if (nrow(data) != original_row_count ||
+        !identical(data[[join_key]], original_key_order)) {
+      stop(
+        "Joining statistics shapefile '", catalog_entry$shapefile,
+        "' changed the dataset rows or their order."
+      )
+    }
+  }
+
+  return(data)
+}
+
 
 # Load and select geoms ----
-INPUT_DIR <- "00-raw_data/02_Entrega_05082026/Shapefiles"
+INPUT_DIR <- "00-raw_data/03_Entrega_21092026/Shapefiles"
 OUTPUT_DIR <- '02-processed_data'
 current_date <- now() %>% date()
 shp_output <- fs::path_join(c(OUTPUT_DIR, "aoi_shp"))
-tiff_output <- fs::path_join(c(OUTPUT_DIR, "aoi_tiff"))
 
 fs::dir_create(shp_output)
-fs::dir_create(tiff_output)
 
-nanocuencas_ids <- c("ESTADO_SHT", "CLAVE_SHT")
-nanocuecas_data <- sf::read_sf(file.path(INPUT_DIR,'Nanocuencas/SHT_V3_uw.shp'))
+nanocuencas_ids <- c("CVESHT_EDO", "idNano")
+nanocuecas_data <- sf::read_sf(list.files(file.path(INPUT_DIR, "Nanocuencas"),
+                                          pattern = "\\.shp$",
+                                          full.names = TRUE)
+)
 aoi_bbox <- nanocuecas_data %>% st_bbox() %>% st_as_sfc() %>% st_buffer(3000) %>% st_bbox() %>% st_as_sfc()
 
-# Read, transform, and filter spatial covariates from the catalog
-covariates_dir <- file.path(INPUT_DIR, "Covariables")
-covariate_catalog <- readr::read_csv(file.path(INPUT_DIR, "catalogo.csv"))
+# Read, transform, and filter categorical variables from the catalog
+covariates_dir <- file.path(INPUT_DIR, "Variables")
+covariate_catalog <- readr::read_csv(
+  file.path(INPUT_DIR, "categorical_variables_catalog.csv"),
+  show_col_types = FALSE
+)
 
 spatial_covariates <- load_spatial_covariates(
   covariate_catalog,
@@ -269,7 +330,7 @@ spatial_covariates <- load_spatial_covariates(
   aoi_bbox
 )
 
-# Add covar data raster
+# Calculate slope variable
 
 world_dem <- read_stars('00-raw_data/DEM/wc2.1_30s_elev.tif')
 dem_crs <- world_dem %>% st_crs()
@@ -289,18 +350,30 @@ aoi_dem_proj <- aoi_dem %>%
 aoi_dem_slope <- aoi_dem_proj %>% 
   starsExtra::slope()
 
-# Save raster data
-aoi_dem %>% 
-  write_stars(fs::path_join(c(tiff_output, paste(current_date, 'dem_aoi.tiff', sep="_"))))
-
-aoi_dem_slope %>% 
-  write_stars(fs::path_join(c(tiff_output, paste(current_date, 'dem_slope_aoi.tiff', sep="_"))))
-
 # Create dataset ----
-# Add covar data - shapefile
 dataset <- nanocuecas_data %>%
-  select(nanocuencas_ids)
+  dplyr::select(dplyr::all_of(nanocuencas_ids))
 
+# Add variables with precomputed summary statistics
+stats_dir <- file.path(INPUT_DIR, "Estadisticas")
+stats_catalog <- readr::read_csv(
+  file.path(INPUT_DIR, "stats_variables_catalog.csv"),
+  show_col_types = FALSE
+)
+
+dataset <- dataset %>%
+  add_summary_stats(stats_catalog, stats_dir)
+
+# Add slope
+fn_list <- list(
+  "mean" = mean,
+  "sd" = sd
+)
+
+dataset <- dataset %>% 
+  add_stat_raster(aoi_dem_slope, funs = fn_list, column_prefix = "slope", na.rm = TRUE)
+
+# Add categorical variables
 for (catalog_row in seq_len(nrow(covariate_catalog))) {
   catalog_entry <- covariate_catalog[catalog_row, ]
   dataset <- add_area_covar(
@@ -312,20 +385,9 @@ for (catalog_row in seq_len(nrow(covariate_catalog))) {
   )
 }
 
-# Add covar data - raster 
-fn_list <- list(
-  "min" = min,
-  "max" = max,
-  "median" = median,
-  "mean" = mean,
-  "sd" = sd
-)
-
-dataset <- dataset %>% 
-  add_stat_raster(aoi_dem_slope, funs = fn_list, column_prefix = "slope", na.rm = TRUE)
-
 # Save dataset shp
-dataset %>% st_write(fs::path_join(c(shp_output, paste(current_date, "dataset.gpkg", sep="_"))))
+dataset %>% st_write(fs::path_join(c(shp_output, paste(current_date, "dataset.gpkg", sep="_"))),
+                     delete_layer = TRUE)
 
 dataset %>% 
   st_drop_geometry() %>% 
