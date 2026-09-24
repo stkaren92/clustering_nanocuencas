@@ -1,6 +1,9 @@
 library(tidyverse)
 library(factoextra)
 library(dad)
+library(dplyr)
+library(purrr)
+library(rlang)
 
 # Utils functions ----
 
@@ -173,75 +176,98 @@ get_distance_matrix <- function(X, variable_type){
 
 
 # Clustering ----
+RAW_DIR <- '00-raw_data/03_Entrega_21092026/Shapefiles'
 INPUT_DIR <- '02-processed_data'
 OUTPUT_DIR <- '03-clustering_output'
 current_date <- now() %>% date()
 
-data <- read_csv(fs::path_join(c(INPUT_DIR, "2026-08-06_dataset.csv")))
-nanocuecas_sf <- sf::read_sf('00-raw_data/02_Entrega_05082026/Shapefiles/Nanocuencas/SHT_V3_uw.shp')
+data <- read_csv(fs::path_join(c(INPUT_DIR, "2026-09-24_dataset.csv")))
+nanocuecas_sf <- sf::read_sf(list.files(file.path(RAW_DIR, "Nanocuencas"),
+                                          pattern = "\\.shp$",
+                                          full.names = TRUE)
+)
 
-# Normalize count variables to get a probability distribution
-data <- data %>%
-  rowwise() %>%
-  mutate(across(starts_with('glg'),
-                ~ . / sum(c_across(starts_with('glg')))),
-         across(starts_with('suelo1'),
-                ~ . / sum(c_across(starts_with('suelo1')))),
-         across(starts_with('suelo2'),
-                ~ . / sum(c_across(starts_with('suelo2')))),
-         across(starts_with('usv'),
-                ~ . / sum(c_across(starts_with('usv')))),
-         across(starts_with('sueloprin'),
-                ~ . / sum(c_across(starts_with('sueloprin')))),
-         across(starts_with('sueloinifap'),
-                ~ . / sum(c_across(starts_with('sueloinifap'))))
-  ) %>%
-  ungroup()
+cat_var_catalog <- read_csv(
+  file.path(RAW_DIR, "categorical_variables_catalog.csv")
+)
+cat_prefixes <- cat_var_catalog$prefix
+
+stats_var_catalog <- read_csv(
+  file.path(RAW_DIR, "stats_variables_catalog.csv")
+)
+stats_prefixes <- c("slope", stats_var_catalog$prefix)
+
+# Normalize categorical variables to get a probability distribution
+for (p in cat_prefixes) {
+  cols <- names(data)[startsWith(names(data), p)]
+  
+  data <- data %>%
+    rowwise() %>%
+    mutate(
+      across(
+        all_of(cols),
+        ~ {
+          total <- sum(c_across(all_of(cols)), na.rm = TRUE)
+          if (total == 0) NA_real_ else .x / total
+        }
+      )
+    ) %>%
+    ungroup()
+}
 
 # Group columns in vector variables
+variables <- setNames(
+  lapply(cat_prefixes, \(p) names(data)[startsWith(names(data), p)]),
+  cat_prefixes
+)
+variables[stats_prefixes] <- setNames(
+  lapply(stats_prefixes, \(x) paste0(x, c("_mean", "_sd"))),
+  stats_prefixes
+)
+
 data <- data %>%
   rowwise() %>%
-  mutate(tipo_rocas = list(c_across(starts_with('glg'))),
-         tipo_suelo_gen = list(c_across(starts_with('suelo1'))),
-         tipo_suelo_gen2 = list(c_across(starts_with('suelo2'))),
-         uso_suelo = list(c_across(starts_with('usv'))),
-         pendiente = list(c_across(all_of(c("slope_mean","slope_sd")))),
-         tipo_suelo_prin = list(c_across(starts_with('sueloprin'))),
-         tipo_suelo_inifap = list(c_across(starts_with('sueloinifap')))
-         ) %>%
+  mutate(
+    !!!imap(variables, \(cols, nm) {
+      expr(list(c_across(all_of(!!cols))))
+    })
+  ) %>%
   ungroup()
 
 # Get distance matrix 
 X <- data %>% 
-  dplyr::select(c("tipo_rocas",
-                  "tipo_suelo_gen",
-                  "tipo_suelo_gen2",
-                  "uso_suelo",
-                  "pendiente",
-                  "tipo_suelo_prin",
-                  "tipo_suelo_inifap"))
+  dplyr::select(names(variables))
 
-variable_type <- c("distribution",
-                   "distribution",
-                   "distribution",
-                   "distribution",
-                   "parameters",
-                   "distribution",
-                   "distribution")
+variable_type <- c(rep("distribution",length(cat_prefixes)),
+                   rep("parameters", length(stats_prefixes)))
 
 S <- get_distance_matrix(X, variable_type)
-rownames(S) <- data %>% pull(clave_sht)
-colnames(S) <- data %>% pull(clave_sht)
+rownames(S) <- data %>% pull(names(data)[2])
+colnames(S) <- data %>% pull(names(data)[2])
 D <- as.dist(S)
 
 # Select optimal k
 fviz_nbclust(D, hcut, method = "wss",
              hc_method = "complete")
+ggsave(
+  filename = fs::path_join(c(OUTPUT_DIR,
+                             paste(current_date,
+                                   "wws_plot.png",
+                                   sep = "_"))),
+  width = 7, height = 5, dpi = 300
+)
 fviz_nbclust(D, hcut, method = "silhouette",
              hc_method = "complete")
+ggsave(
+  filename = fs::path_join(c(OUTPUT_DIR,
+                             paste(current_date,
+                                   "silhouette_plot.png",
+                                   sep = "_"))),
+  width = 7, height = 5, dpi = 300
+)
 
 # Clustering
-k <- 4
+k <- 7
 hclust <- hclust(D, method = 'complete')
 cut <- cutree(hclust, k = k)
 data$cluster <- cut
@@ -269,7 +295,7 @@ data_sum <- data %>%
                        names = c('var', 'category'), too_many = 'merge')
 
 ggplot(data_sum %>% 
-         filter(var != "slope"), 
+         filter((var %in% cat_prefixes)), 
        aes(x=category, y=value)) + 
   geom_bar(stat = "identity") +
   coord_flip() +
@@ -283,8 +309,8 @@ ggsave(fs::path_join(c(OUTPUT_DIR, paste(current_date, "cluster_description", k,
 # Save cluster shapefile
 nanocuecas_data <- nanocuecas_sf %>% 
   left_join(data %>% 
-              select(cluster,clave_sht), 
-            by = c("CLAVE_SHT"="clave_sht"))
+              select(cluster,id_nano), 
+            by = c("idNano"="id_nano"))
 
 ggplot(nanocuecas_data, 
        aes(fill = as.factor(cluster))) +
