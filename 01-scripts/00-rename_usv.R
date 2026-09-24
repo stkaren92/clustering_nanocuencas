@@ -14,10 +14,16 @@ usv_mapping <- utils::read.csv(
   check.names = FALSE
 )
 
-mapping_descriptions <- trimws(as.character(usv_mapping$DESCRIPCIO))
+mapping_descriptions <- stringi::stri_trans_general(
+  trimws(as.character(usv_mapping$DESCRIPCIO)),
+  "Latin-ASCII"
+)
 mapping_labels <- trimws(as.character(usv_mapping$ETIQUETA))
 
-usv_descriptions <- trimws(as.character(usv_data$DESCRIPCIO))
+usv_descriptions <- stringi::stri_trans_general(
+  trimws(as.character(usv_data$DESCRIPCIO)),
+  "Latin-ASCII"
+)
 mapping_matches <- match(usv_descriptions, mapping_descriptions)
 unmatched_features <- is.na(mapping_matches)
 
