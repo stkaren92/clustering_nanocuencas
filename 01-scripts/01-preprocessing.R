@@ -182,8 +182,71 @@ add_stat_raster <- function(data,
   return(result)
 }
 
+#' Transform and filter a spatial covariate
+#'
+#' MULTIPOLYGON inputs are split into POLYGON features before filtering so
+#' individual components outside the area of interest are discarded.
+#'
+#' @param data sf object containing the covariate
+#' @param aoi sf or sfc object defining the area of interest
+#'
+#' @return sf object transformed to the AOI CRS and filtered by the AOI
+process_spatial_covar <- function(data,
+                                  aoi) {
+  geometry_types <- unique(as.character(sf::st_geometry_type(data)))
+
+  if ("MULTIPOLYGON" %in% geometry_types) {
+    data <- sf::st_cast(
+      data,
+      "POLYGON",
+      group_or_split = FALSE
+    )
+  }
+
+  data_aoi <- data %>%
+    sf::st_transform(sf::st_crs(aoi)) %>%
+    sf::st_filter(aoi)
+
+  return(data_aoi)
+}
+
+#' Load and process the spatial covariates listed in a catalog
+#'
+#' Each unique shapefile is read and processed once, even when the catalog uses
+#' more than one of its attribute columns.
+#'
+#' @param catalog validated spatial covariate catalog
+#' @param covariates_dir directory containing the catalog shapefiles
+#' @param aoi sf or sfc object defining the area of interest
+#'
+#' @return named list of processed sf objects keyed by shapefile
+load_spatial_covariates <- function(catalog,
+                                    covariates_dir,
+                                    aoi) {
+  covariate_shapefiles <- unique(catalog$shapefile)
+  spatial_covariates <- stats::setNames(
+    vector("list", length(covariate_shapefiles)),
+    covariate_shapefiles
+  )
+
+  for (shapefile in covariate_shapefiles) {
+    covariate <- sf::st_read(
+      file.path(covariates_dir, shapefile),
+      quiet = TRUE
+    )
+
+    spatial_covariates[[shapefile]] <- process_spatial_covar(
+      covariate,
+      aoi
+    )
+  }
+
+  return(spatial_covariates)
+}
+
 
 # Load and select geoms ----
+INPUT_DIR <- "00-raw_data/02_Entrega_05082026/Shapefiles"
 OUTPUT_DIR <- '02-processed_data'
 current_date <- now() %>% date()
 shp_output <- fs::path_join(c(OUTPUT_DIR, "aoi_shp"))
@@ -192,62 +255,19 @@ tiff_output <- fs::path_join(c(OUTPUT_DIR, "aoi_tiff"))
 fs::dir_create(shp_output)
 fs::dir_create(tiff_output)
 
-
-nanocuecas_data <- sf::read_sf('00-raw_data/02_Entrega_05082026/Shapefiles/Nanocuencas/SHT_V3_uw.shp')
-
-geologia_data <- sf::st_read('00-raw_data/02_Entrega_05082026/Shapefiles/Covariables/r250k_ccl_dissolveTipo.shp')
-suelos2000_data <- sf::st_read('00-raw_data/02_Entrega_05082026/Shapefiles/Covariables/contedafo_cw.shp', options = "ENCODING=WINDOWS-1252")
-usvVII_data <- sf::read_sf('00-raw_data/02_Entrega_05082026/Shapefiles/Covariables/usv250s7cw.shp')
-suelos2006_data <- sf::read_sf('00-raw_data/02_Entrega_05082026/Shapefiles/Covariables/con_nal_06-11-2013.shp')
-suelosINIFAP_data <- sf::read_sf('00-raw_data/02_Entrega_05082026/Shapefiles/Covariables/eda251mcw.shp')
-
-st_crs(suelos2000_data) <- geologia_data %>% st_crs()
-
+nanocuencas_ids <- c("ESTADO_SHT", "CLAVE_SHT")
+nanocuecas_data <- sf::read_sf(file.path(INPUT_DIR,'Nanocuencas/SHT_V3_uw.shp'))
 aoi_bbox <- nanocuecas_data %>% st_bbox() %>% st_as_sfc() %>% st_buffer(3000) %>% st_bbox() %>% st_as_sfc()
 
-geologia_data_poly <- st_cast(geologia_data, "POLYGON", 
-                              group_or_split = FALSE) # Convert mutipolygon to polygon
+# Read, transform, and filter spatial covariates from the catalog
+covariates_dir <- file.path(INPUT_DIR, "Covariables")
+covariate_catalog <- readr::read_csv(file.path(INPUT_DIR, "catalogo.csv"))
 
-# Set all CRS to my aoi CRS 
-aoi_crs <- aoi_bbox %>% st_crs()
-
-geologia_data_poly <- geologia_data_poly %>% st_transform(aoi_crs)
-suelos2000_data <- suelos2000_data %>% st_transform(aoi_crs)
-usvVII_data <- usvVII_data %>% st_transform(aoi_crs)
-suelos2006_data <- suelos2006_data %>% st_transform(aoi_crs)
-suelosINIFAP_data <- suelosINIFAP_data %>% st_transform(aoi_crs)
-
-# Filter by AOI
-geologia_data_aoi <- geologia_data_poly %>% 
-  st_filter(aoi_bbox)
-
-suelos2000_data_aoi <- suelos2000_data %>% 
-  st_filter(aoi_bbox)
-
-usvVII_data_aoi <- usvVII_data %>% 
-  st_filter(aoi_bbox)
-
-suelos2006_data_aoi <- suelos2006_data %>% 
-  st_filter(aoi_bbox)
-
-suelosINIFAP_data_aoi <- suelosINIFAP_data %>% 
-  st_filter(aoi_bbox)
-
-# Save shp
-geologia_data_aoi %>%
-  st_write(fs::path_join(c(shp_output, paste(current_date, 'geologia.shp', sep="_"))))
-
-suelos2000_data_aoi %>%
-  st_write(fs::path_join(c(shp_output, paste(current_date, 'suelos.shp', sep="_"))))
-
-usvVII_data_aoi %>%
-  st_write(fs::path_join(c(shp_output, paste(current_date, 'usvVII.shp', sep="_"))))
-
-suelos2006_data_aoi %>%
-  st_write(fs::path_join(c(shp_output, paste(current_date, 'suelosPrincipal.shp', sep="_"))))
-
-suelosINIFAP_data_aoi %>%
-  st_write(fs::path_join(c(shp_output, paste(current_date, 'suelosDescripcion.shp', sep="_"))))
+spatial_covariates <- load_spatial_covariates(
+  covariate_catalog,
+  covariates_dir,
+  aoi_bbox
+)
 
 # Add covar data raster
 
@@ -277,44 +297,20 @@ aoi_dem_slope %>%
   write_stars(fs::path_join(c(tiff_output, paste(current_date, 'dem_slope_aoi.tiff', sep="_"))))
 
 # Create dataset ----
-
-# Select columns of interest
-geologia_data_aoi <- geologia_data_aoi %>%
-  select(TIPO)
-
-suelos2000_data_aoi <- suelos2000_data_aoi %>%
-  select(NOM_SUE1, NOM_SUE2)
-
-usvVII_data_aoi <- usvVII_data_aoi %>%
-  select(DESCRIPCIO)
-
-suelos2006_data_aoi <- suelos2006_data_aoi %>%
-  select(GRUPO1)
-
-suelosINIFAP_data_aoi <- suelosINIFAP_data_aoi %>%
-  select(DESCRIPCIO)
-
-nanocuecas_data <- nanocuecas_data %>%
-  select(ESTADO_SHT, CLAVE_SHT)
-
 # Add covar data - shapefile
-dataset <- nanocuecas_data %>% 
-  add_area_covar(geologia_data_aoi, "TIPO", unit = 'ha', column_prefix = "glg")
+dataset <- nanocuecas_data %>%
+  select(nanocuencas_ids)
 
-dataset <- dataset %>% 
-  add_area_covar(suelos2000_data_aoi, "NOM_SUE1", unit = 'ha', column_prefix = "suelo1")
-
-dataset <- dataset %>% 
-  add_area_covar(suelos2000_data_aoi, "NOM_SUE2", unit = 'ha', column_prefix = "suelo2")
-
-dataset <- dataset %>% 
-  add_area_covar(usvVII_data_aoi, "DESCRIPCIO", unit = 'ha', column_prefix = "usv")
-
-dataset <- dataset %>% 
-  add_area_covar(suelos2006_data_aoi, "GRUPO1", unit = 'ha', column_prefix = "sueloprin")
-
-dataset <- dataset %>% 
-  add_area_covar(suelosINIFAP_data_aoi, "DESCRIPCIO", unit = 'ha', column_prefix = "sueloinifap")
+for (catalog_row in seq_len(nrow(covariate_catalog))) {
+  catalog_entry <- covariate_catalog[catalog_row, ]
+  dataset <- add_area_covar(
+    dataset,
+    spatial_covariates[[catalog_entry$shapefile]],
+    catalog_entry$variable,
+    unit = "ha",
+    column_prefix = catalog_entry$prefix
+  )
+}
 
 # Add covar data - raster 
 fn_list <- list(
