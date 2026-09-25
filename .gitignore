@@ -2,3 +2,6 @@
 .Rhistory
 .DS_Store
 .RData
+01-scripts/03-check_sparse_categories.R
+00-raw_data/01_Entrega_07012026/
+00-raw_data/02_Entrega_05082026/
