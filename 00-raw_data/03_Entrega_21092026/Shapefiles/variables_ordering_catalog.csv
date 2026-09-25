@@ -1,0 +1,123 @@
+var,order,category,label
+glg,1, Aluvial , Aluvial 
+glg,2, Lacustre , Lacustre 
+glg,3, Caliza , Caliza 
+glg,4, Caliza-Lutita , Caliza-Lutita 
+glg,5, Travertino , Travertino 
+glg,6, Arenisca-Conglomerado , Arenisca-Conglomerado 
+glg,7, Conglomerado , Conglomerado 
+glg,8, Brecha sedimentaria , Brecha sedimentaria 
+glg,9, Lutita-Arenisca , Lutita-Arenisca 
+glg,10, Basalto , Basalto 
+glg,11, Basalto-Brecha volcanica basica , Basalto-Brecha volcanica basica 
+glg,12, Basalto-Toba basica , Basalto-Toba basica 
+glg,13, Andesita , Andesita 
+glg,14, Dacita , Dacita 
+glg,15, Toba acida , Toba acida 
+glg,16, Toba intermedia , Toba intermedia 
+glg,17, Porfido riolitico , Porfido riolitico 
+glg,18, Toba basica , Toba basica 
+glg,19, Toba basica-Brecha volcanica basica , Toba basica-Brecha volcanica basica 
+glg,20, Brecha volcanica basica , Brecha volcanica basica 
+glg,21, Brecha volcanica intermedia , Brecha volcanica intermedia 
+glg,22, Volcanoclastico , Volcanoclastico 
+glg,23, Metasedimentaria , Metasedimentaria 
+glg,24, N/A , N/A 
+suelo1,1,Andosol,Andosol1
+suelo1,2,Feozem,Feozem1
+suelo1,3,Castanozem,Casta–ozem1
+suelo1,4,casta_ozem,Casta+ozem
+suelo1,5,Luvisol,Luvisol1
+suelo1,6,Cambisol,Cambisol1
+suelo1,7,Acrisol,Acrisol1
+suelo1,8,Litosol,Litosol1
+suelo1,9,Regosol,Regosol1
+suelo1,10,Rendzina,Rendzina1
+suelo1,11,Gleysol,Gleysol1
+suelo1,12,Histosol,Histosol1
+suelo1,13,Planosol,Planosol1
+suelo1,14,Fluvisol,Fluvisol1
+suelo1,15,Vertisol,Vertisol1
+suelo1,16,Solonchak,Solonchak1
+suelo1,17,N/A,N/A1
+suelo2,1,Andosol,Andosol2
+suelo2,2,Feozem,Feozem2
+suelo2,3,Castanozem,Casta–ozem2
+suelo2,4,Luvisol,Luvisol2
+suelo2,5,Chernozem,Chernozem2
+suelo2,6,Cambisol,Cambisol2
+suelo2,7,Acrisol,Acrisol2
+suelo2,8,Litosol,Litosol2
+suelo2,9,Regosol,Regosol2
+suelo2,10,Rendzina,Rendzina2
+suelo2,11,Gleysol,Gleysol2
+suelo2,12,Histosol,Histosol2
+suelo2,13,Planosol,Planosol2
+suelo2,14,Fluvisol,Fluvisol2
+suelo2,15,Vertisol,Vertisol2
+suelo2,16,Solonchak,Solonchak2
+suelo2,17,N/A,N/A2
+suelo2,18,NINGUNO,NINGUNO2
+sueloinifap,1,ANDOSOL HUMICO,ANDOSOL HUMICO
+sueloinifap,2,ANDOSOL MOLICO,ANDOSOL MOLICO
+sueloinifap,3,ANDOSOL OCRICO,ANDOSOL OCRICO
+sueloinifap,4,FEOZEM CALCARICO,FEOZEM CALCARICO
+sueloinifap,5,FEOZEM HAPLICO,FEOZEM HAPLICO
+sueloinifap,6,FEOZEM LUVICO,FEOZEM LUVICO
+sueloinifap,7,CASTA„OSEM  HAPLICO,CASTA„OSEM  HAPLICO
+sueloinifap,8,CASTA„OZEM CALCICO,CASTA„OZEM CALCICO
+sueloinifap,9,LUVISOL CROMICO,LUVISOL CROMICO
+sueloinifap,10,LUVISOL ORTICO,LUVISOL ORTICO
+sueloinifap,11,CAMBISOL CALCICO (calcarico),CAMBISOL CALCICO (calcarico)
+sueloinifap,12,CAMBISOL CROMICO,CAMBISOL CROMICO
+sueloinifap,13,CAMBISOL EUTRICO,CAMBISOL EUTRICO
+sueloinifap,14,CAMBISOL HUMICO,CAMBISOL HUMICO
+sueloinifap,15,ACRISOL HUMICO,ACRISOL HUMICO
+sueloinifap,16,LITOSOL,LITOSOL
+sueloinifap,17,REGOSOL CALCARICO,REGOSOL CALCARICO
+sueloinifap,18,REGOSOL DISTRICO,REGOSOL DISTRICO
+sueloinifap,19,REGOSOL EUTRICO,REGOSOL EUTRICO
+sueloinifap,20,RENDZINA,RENDZINA
+sueloinifap,21,GLEYSOL MOLICO,GLEYSOL MOLICO
+sueloinifap,22,HISTOSOL EUTRICO,HISTOSOL EUTRICO
+sueloinifap,23,PLANOSOL EUTRICO,PLANOSOL EUTRICO
+sueloinifap,24,PLANOSOL MOLICO,PLANOSOL MOLICO
+sueloinifap,25,FEOZEM GLEYICO,FEOZEM GLEYICO
+sueloinifap,26,FLUVISOL DISTRICO,FLUVISOL DISTRICO
+sueloinifap,27,FLUVISOL EUTRICO,FLUVISOL EUTRICO
+sueloinifap,28,VERTISOL CROMICO,VERTISOL CROMICO
+sueloinifap,29,VERTISOL PELICO,VERTISOL PELICO
+sueloinifap,30,SOLONCHAK GLEYICO,SOLONCHAK GLEYICO
+sueloinifap,31,SOLONCHAK MOLICO,SOLONCHAK MOLICO
+usv,1,vn_BP,vn_BP
+usv,2,vn_BP-E,vn_BP-E
+usv,3,vn_BE,vn_BE
+usv,4,vn_BE-P,vn_BE-P
+usv,5,vn_BG,vn_BG
+usv,6,vn_BO,vn_BO
+usv,7,vn_BMM,vn_BMM
+usv,8,vn_PAM,vn_PAM
+usv,9,vn_SBC,vn_SBC
+usv,10,vn_MC,vn_MC
+usv,11,vn_MDR,vn_MDR
+usv,12,vn_MS,vn_MS
+usv,13,vn_PH,vn_PH
+usv,14,vn_TUL,vn_TUL
+usv,15,vn_CA,vn_CA
+usv,16,vn_DV,vn_DV
+usv,17,vn_SVA,vn_SVA
+usv,18,vs_BP,vs_BP
+usv,19,vs_BP-E,vs_BP-E
+usv,20,vs_BE,vs_BE
+usv,21,vs_BE-P,vs_BE-P
+usv,22,vs_BO,vs_BO
+usv,23,vs_BMM,vs_BMM
+usv,24,vs_BT,vs_BT
+usv,25,vs_SBC,vs_SBC
+usv,26,ic_BC,ic_BC
+usv,27,ic_PC,ic_PC
+usv,28,ic_PZI,ic_PZI
+usv,29,ic_PMI,ic_PMI
+usv,30,us_Ath,us_Ath
+usv,31,us_Ar,us_Ar
+usv,32,us_AH,us_AH

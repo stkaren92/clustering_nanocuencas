@@ -1,0 +1,48 @@
+DESCRIPCIO,ORDEN,CLASES,ETIQUETA
+ BOSQUE DE PINO , 1 ,Bosque de pino,vn_BP
+ BOSQUE DE PINO-ENCINO , 2 ,Bosque de pino-encino,vn_BP-E
+ BOSQUE DE ENCINO , 3 ,Bosque de encino,vn_BE
+ BOSQUE DE ENCINO-PINO , 4 ,Bosque de encino-pino,vn_BE-P
+ BOSQUE DE GALERÍA , 5 ,Bosque de galería,vn_BG
+ BOSQUE DE OYAMEL , 6 ,Bosque de oyamel,vn_BO
+ BOSQUE MESÓFILO DE MONTAÑA , 7 ,Bosque mesófilo de montaña,vn_BMM
+ PRADERA DE ALTA MONTAÑA , 8 ,Pradera de alta montaña,vn_PAM
+ SELVA BAJA CADUCIFOLIA , 9 ,Selva baja caducifolia,vn_SBC
+ MATORRAL CRASICAULE , 10 ,Matorral crasicaule,vn_MC
+ MATORRAL DESÉRTICO ROSETÓFILO , 11 ,Matorral desértico rosetófilo,vn_MDR
+ MATORRAL SARCOCAULE , 12 ,Matorral sarcocaule,vn_MS
+ PASTIZAL HALÓFILO , 13 ,Pastizal halófilo,vn_PH
+ TULAR , 14 ,Tular,vn_TUL
+ CUERPO DE AGUA , 15 ,Cuerpo de agua,vn_CA
+ DESPROVISTO DE VEGETACIÓN , 16 ,Desprovisto de vegetación,vn_DV
+ SIN VEGETACIÓN APARENTE , 17 ,Sin vegetación aparente,vn_SVA
+ VEGETACIÓN SECUNDARIA ARBÓREA DE BOSQUE DE PINO , 18 ,Vegetación secundaria de Bosque de pino,vs_BP
+ VEGETACIÓN SECUNDARIA ARBUSTIVA DE BOSQUE DE PINO , 18 ,Vegetación secundaria de Bosque de pino,vs_BP
+ VEGETACIÓN SECUNDARIA ARBÓREA DE BOSQUE DE PINO-ENCINO , 19 ,Vegetación secundaria de Bosque de pino-encino,vs_BP-E
+ VEGETACIÓN SECUNDARIA ARBUSTIVA DE BOSQUE DE PINO-ENCINO , 19 ,Vegetación secundaria de Bosque de pino-encino,vs_BP-E
+ VEGETACIÓN SECUNDARIA ARBÓREA DE BOSQUE DE ENCINO , 20 ,Vegetación secundaria de Bosque de encino,vs_BE
+ VEGETACIÓN SECUNDARIA ARBUSTIVA DE BOSQUE DE ENCINO , 20 ,Vegetación secundaria de Bosque de encino,vs_BE
+ VEGETACIÓN SECUNDARIA ARBÓREA DE BOSQUE DE ENCINO-PINO , 21 ,Vegetación secundaria de Bosque de encino-pino,vs_BE-P
+ VEGETACIÓN SECUNDARIA ARBUSTIVA DE BOSQUE DE ENCINO-PINO , 21 ,Vegetación secundaria de Bosque de encino-pino,vs_BE-P
+ VEGETACIÓN SECUNDARIA ARBÓREA DE BOSQUE DE OYAMEL , 22 ,Vegetación secundaria de Bosque de oyamel,vs_BO
+ VEGETACIÓN SECUNDARIA ARBUSTIVA DE BOSQUE DE OYAMEL , 22 ,Vegetación secundaria de Bosque de oyamel,vs_BO
+ VEGETACIÓN SECUNDARIA ARBÓREA DE BOSQUE MESÓFILO DE MONTAÑA , 23 ,Vegetación secundaria de Bosque de mesófilo de montaña,vs_BMM
+ VEGETACIÓN SECUNDARIA ARBUSTIVA DE BOSQUE MESÓFILO DE MONTAÑA , 23 ,Vegetación secundaria de Bosque de mesófilo de montaña,vs_BMM
+ VEGETACIÓN SECUNDARIA ARBÓREA DE BOSQUE DE TÁSCATE , 24 ,Vegetación secundaria de Bosque de táscate,vs_BT
+ VEGETACIÓN SECUNDARIA ARBUSTIVA DE BOSQUE DE TÁSCATE , 24 ,Vegetación secundaria de Bosque de táscate,vs_BT
+ VEGETACIÓN SECUNDARIA ARBÓREA DE SELVA BAJA CADUCIFOLIA , 25 ,Vegetación secundaria de Selva baja caducifolia,vs_SBC
+ VEGETACIÓN SECUNDARIA ARBUSTIVA DE SELVA BAJA CADUCIFOLIA , 25 ,Vegetación secundaria de Selva baja caducifolia,vs_SBC
+ BOSQUE CULTIVADO , 26 ,Bosque cultivado,ic_BC
+ PASTIZAL CULTIVADO , 27 ,Pastizal cultivado,ic_PC
+ PASTIZAL INDUCIDO , 28 ,Pastizal inducido,ic_PZI
+ PALMAR INDUCIDO , 29 ,Palmar inducido,ic_PMI
+ AGRICULTURA DE HUMEDAD ANUAL , 30 ,Agricultura de temporal y humedad,us_Ath
+ AGRICULTURA DE TEMPORAL ANUAL , 30 ,Agricultura de temporal y humedad,us_Ath
+ AGRICULTURA DE TEMPORAL ANUAL Y PERMANENTE , 30 ,Agricultura de temporal y humedad,us_Ath
+ AGRICULTURA DE TEMPORAL ANUAL Y SEMIPERMANENTE , 30 ,Agricultura de temporal y humedad,us_Ath
+ AGRICULTURA DE TEMPORAL PERMANENTE , 30 ,Agricultura de temporal y humedad,us_Ath
+ AGRICULTURA DE RIEGO ANUAL , 31 ,Agricultura de riego,us_Ar
+ AGRICULTURA DE RIEGO ANUAL Y PERMANENTE , 31 ,Agricultura de riego,us_Ar
+ AGRICULTURA DE RIEGO ANUAL Y SEMIPERMANENTE , 31 ,Agricultura de riego,us_Ar
+ AGRICULTURA DE RIEGO SEMIPERMANENTE , 31 ,Agricultura de riego,us_Ar
+ ASENTAMIENTOS HUMANOS , 32 ,Asentamientos humanos,us_AH

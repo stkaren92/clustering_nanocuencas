@@ -1,0 +1,4 @@
+shapefile,join_key,prefix
+shtv4_stats_altitud.shp,idNano,alt
+shtv4_stats_densidadff.shp,idNano,densff
+shtv4_stats_promedio.shp,idNano,prom
