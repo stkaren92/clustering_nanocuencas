@@ -174,14 +174,14 @@ get_distance_matrix <- function(X, variable_type){
   return(S)
 }
 
-
-# Clustering ----
+# Preprocess ----
 RAW_DIR <- '00-raw_data/03_Entrega_21092026/Shapefiles'
 INPUT_DIR <- '02-processed_data'
 OUTPUT_DIR <- '03-clustering_output'
 current_date <- now() %>% date()
 
-data <- read_csv(fs::path_join(c(INPUT_DIR, "2026-09-24_dataset.csv")))
+data <- read_csv(fs::path_join(c(INPUT_DIR, paste(current_date, 
+                                                  "dataset.csv", sep="_"))))
 nanocuecas_sf <- sf::read_sf(list.files(file.path(RAW_DIR, "Nanocuencas"),
                                           pattern = "\\.shp$",
                                           full.names = TRUE)
@@ -196,6 +196,17 @@ stats_var_catalog <- read_csv(
   file.path(RAW_DIR, "stats_variables_catalog.csv")
 )
 stats_prefixes <- c("slope", stats_var_catalog$prefix)
+
+category_order_catalog <- readr::read_csv(
+  file.path(
+    RAW_DIR,
+    "variables_ordering_catalog.csv"
+  ),
+  locale = readr::locale(encoding = "MacRoman"),
+  trim_ws = TRUE
+)
+category_order_catalog <- category_order_catalog %>%
+  mutate(category = janitor::make_clean_names(category, allow_dupes = TRUE))
 
 # Normalize categorical variables to get a probability distribution
 for (p in cat_prefixes) {
@@ -234,6 +245,7 @@ data <- data %>%
   ) %>%
   ungroup()
 
+# Clustering ----
 # Get distance matrix 
 X <- data %>% 
   dplyr::select(names(variables))
@@ -294,11 +306,35 @@ data_sum <- data %>%
                        delim = "_", 
                        names = c('var', 'category'), too_many = 'merge')
 
-ggplot(data_sum %>% 
-         filter((var %in% cat_prefixes)), 
-       aes(x=category, y=value)) + 
+categorical_data_sum <- data_sum %>%
+  filter(var %in% cat_prefixes) %>%
+  left_join(
+    category_order_catalog,
+    by = c("var", "category")
+  )
+
+categorical_data_sum <- categorical_data_sum %>%
+  group_by(var) %>%
+  mutate(
+    plot_category = forcats::fct_reorder(
+      paste(var, category, dplyr::coalesce(label, category), sep = "::"),
+      dplyr::coalesce(
+        order,
+        max(c(0, order), na.rm = TRUE) + dplyr::dense_rank(category)
+      ),
+      .desc = TRUE
+    )
+  ) %>%
+  ungroup()
+
+ggplot(categorical_data_sum,
+       aes(x=plot_category, y=value)) + 
   geom_bar(stat = "identity") +
   coord_flip() +
+  scale_x_discrete(
+    labels = \(x) sub("^[^:]+::[^:]+::", "", x)
+  ) +
+  labs(x = "category") +
   facet_grid(var ~ cluster, scales="free_y",
              space = "free")
 ggsave(fs::path_join(c(OUTPUT_DIR, paste(current_date, "cluster_description", k, "k.jpg", sep = "_"))),
