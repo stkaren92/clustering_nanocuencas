@@ -71,7 +71,12 @@ add_area_covar <- function(data, covar, covar_column, unit = "m2", column_prefix
   
   # Replace NA with 0 for features with no intersections
   area_columns <- names(result)[grepl(paste0("^", column_prefix, "_"), names(result))]
+  geometry_column <- attr(result, "sf_column")
   result <- result %>%
+    dplyr::relocate(
+      dplyr::all_of(geometry_column),
+      .after = dplyr::last_col()
+    ) %>%
     dplyr::mutate(dplyr::across(dplyr::all_of(area_columns), ~tidyr::replace_na(., 0))) %>% 
     janitor::clean_names()
   
