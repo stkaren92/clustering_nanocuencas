@@ -293,7 +293,7 @@ plot(hclust)
 rect.hclust(hclust , k = k, border = 2:6)
 dev.off() # Close the device and save the file
 
-# Description by cluster 
+# Categorical-variables barchart of the average distribution by cluster
 data_sum <- data %>% 
   group_by(cluster) %>%
   summarise_if(is.numeric, mean, na.rm = TRUE) %>%
@@ -341,6 +341,40 @@ ggsave(fs::path_join(c(OUTPUT_DIR, paste(current_date, "cluster_description", k,
        width = 30,
        height = 50,
        units = "cm")
+
+# Continuous-variables boxplot of the means by cluster
+continuous_mean_columns <- paste0(stats_prefixes, "_mean")
+
+continuous_mean_data <- data %>%
+  dplyr::select(cluster, dplyr::all_of(continuous_mean_columns)) %>%
+  tidyr::pivot_longer(
+    cols = dplyr::all_of(continuous_mean_columns),
+    names_to = "var",
+    names_pattern = "^(.*)_mean$",
+    values_to = "value"
+  ) %>%
+  dplyr::mutate(
+    cluster = as.factor(cluster),
+    var = factor(var, levels = continuous_mean_variables)
+  )
+
+ggplot(continuous_mean_data, aes(x = cluster, y = value)) +
+  geom_boxplot(na.rm = TRUE) +
+  facet_wrap(~var, scales = "free_y") +
+  labs(
+    x = "Cluster",
+    y = "Nanocuenca mean",
+    title = "Continuous-variable means by cluster"
+  )
+ggsave(
+  fs::path_join(c(
+    OUTPUT_DIR,
+    paste(current_date, "cluster_mean_boxplots", k, "k.jpg", sep = "_")
+  )),
+  width = 24,
+  height = 18,
+  units = "cm"
+)
 
 # Save cluster shapefile
 nanocuecas_data <- nanocuecas_sf %>% 
